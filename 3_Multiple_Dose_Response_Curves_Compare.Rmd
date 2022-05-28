@@ -1,0 +1,62 @@
+---
+title: "Multiple Dose Response Curves"
+output: html_Multiple_Dose_Response_Curves
+---
+
+Step 1. Reading a data file into R. The library(drc) and the library(tidyverse) functions load and activate the packages drc and tidyverse in R
+```{r}
+library(tidyverse)
+library(drc)
+```
+
+Step 2.
+```{r}
+DoseResponse_Data_All <- read.csv("Figure3a.csv")
+
+head(DoseResponse_Data)
+
+DoseResponse_Data_All.model <- drm(Activity ~ Dose, Species_ATPase, 
+                                      data=DoseResponse_Data,
+                                      fct = LL.4(fixed = c(NA, 0, 100, NA)))
+summary(DoseResponse_Data_All.model)
+
+plot(DoseResponse_Data_All.model,
+     type = "all",
+     lwd = c(2,2),
+     lty=c(3,3,1,1,1,1,1,1),
+     col = c("black", "red","black","grey","blue", "yellow","orange","red"),
+     pch = c(1,0),
+     main="Pig, monarch & mutant Drosophila ATPases")
+```
+
+Step 3. How can we compare thedose response curves for the pig and monarch butterfly ATPase data, and the Drosophila lines ATPase data? 
+The lower and upper limits in the two dose response curves are set to 0 and 100
+We can use a global F test to assess if the parameter of the two model curves are identical. 
+```{r}
+# Model 1. Here, we fit a model that does not distinguish between the curves. Notice that the argument Species_ATPase indicating multiple curves is missing in this model.
+DoseResponse_Data_All.model1 <- drm(Activity ~ Dose, 
+                                      data=DoseResponse_Data,
+                                      fct = LL.4(fixed = c(NA, 0, 100, NA)))
+summary(DoseResponse_Data_All.model1)
+plot(DoseResponse_Data_All.model1, type="all")
+
+# Model 2 (nested). Here, we fit a model where we distinguish the dose response curves. We use the argument pmodels to incorporate the  assumption that the lower and upper limits for the ATPases from all ATPases are identical
+DoseResponse_Data_All.model2 <- drm(Activity ~ Dose, Species_ATPase, 
+                                      data=DoseResponse_Data_All,
+                                      fct = LL.4(fixed= c(NA, 0, 100, NA)))
+
+summary(DoseResponse_Data_All.model2)
+plot(DoseResponse_Data_All.model2, type= "all")
+
+```
+Step 4. Compare the two model fits with ANOVA. The p value for the model that does not distinguish the two curves is below 0.001. We can therefore reject the null hypothesis that the two slopes and ED50 parameters are the same for the two ATPases. In consequence, we can reject that the dose-response curves are identical.
+
+```{r}
+anova(DoseResponse_Data_All.model1, DoseResponse_Data_All.model2)
+```
+
+Step 5. The estimated relative potency based on the ED50s of each line can be obtained using the function EDcomp() - need to fix error
+```{r}
+EDcomp(DoseResponse_Data_All.model1, c(50), interval = "delta")
+```
+

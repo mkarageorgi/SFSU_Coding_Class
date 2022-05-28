@@ -1,0 +1,99 @@
+---
+title: "Multiple Dose Response Curves"
+output: html_Multiple_Dose_Response_Curves
+---
+
+Step 1. Reading a data file into R. The library(drc) and the library(tidyverse) functions load and activate the packages drc and tidyverse in R. 
+```{r}
+library(tidyverse)
+library(drc)
+```
+
+
+Step 2. Assign the name DoseResponse_Data_Pig_Monarch to your data file and subset with the filter() function from the dplyr() package of tidyverse the rows with observations from the pig ATPase and monarch butterfly ATPase. Use the head() function to print the first 6 rows of the dataframe. This is useful to check if the data have been read correctly.
+```{r}
+DoseResponse_Data_Pig_Monarch <- read.csv("Figure3a.csv") %>%
+  dplyr::filter(Species_ATPase == "Pig ATPase"|Species_ATPase == "Monarch butterfly ATPase")
+
+head(DoseResponse_Data_Pig_Monarch)
+```
+
+Step 3. Fit two log logistic dose-response curves to the pig and monarch butterfly data. The drm() function is the key function in the drc package for fitting dose-response curves. Activity is the response variable (y-axis) and Dose is the dose (x-axis). Species ATPase is the classification variable.data= DoseResponse_Data_Pig_Monarch identifies the name of the data file. fct=LL.4() is the argument for the log-logistic curve with four parameters. Here, we fixed two of the parameters, the lower and upper limits, at 0 and 100, respectively.Notice that the drm() function does not produce an output. All the information on the model fit is stored in the object under our defined name DoseResponse_Data_Pig_Monarch.model. This will be read by further commands.
+```{r}
+DoseResponse_Data_Pig_Monarch.model <- drm(Activity ~ Dose, Species_ATPase, 
+                                      data=DoseResponse_Data_Pig_Monarch,
+                                      fct = LL.4(fixed = c(NA, 0, 100, NA))) 
+```
+
+Step 4. The summary() function provides a summary of the parameter estimates for the DoseResponse_Data_Pig_Monarch.model. In this case, we have constrained the lower and upper limits to 0 and 100, respectively for both datasets. The parameters that are estimated are the slope (b) and the effective dose (e) and their standard errors. The p-values tell us if the parameters are different from zero.
+```{r}
+summary(DoseResponse_Data_Pig_Monarch.model)
+```
+
+Step 5. The ED() function calculates the estimated effective dose for the pig and monarch data based on the fitted model.
+```{r}
+ED(DoseResponse_Data_Pig_Monarch.model, c(50))
+```
+
+
+Step 6. We use the plot() function to obtain visuals of the two fitted curves. The argument "type = 'all'" displays all data points on the plot because the default is to plot the mean. The argument col() provides the color of the data. The argument pch() specifies the symbols to use when plotting points. The argument lwd() specifies the width of the line. The argument lty() specifies that the lines are dashed. The arguments xlab() and ylab() provide the labels on the axes. The argument main() provides the title of the plot. Notice that by default plot() uses a logarithmic dose axis. This can be switched off with the argument log = "".
+```{r}
+plot(DoseResponse_Data_Pig_Monarch.model,
+     type = "all",
+     lwd = c(2,2),
+     lty=c(3,3),
+     col = c("black", "red"),
+     pch = c(1,0),
+     main="Pig & monarch ATPase")
+```
+
+Step 7. We can also use the ggplot() package from tidyverse to create the same plot.
+```{r}
+p2 <- ggplot(data = DoseResponse_Data_Pig_Monarch,
+       aes(x = Dose, y = Activity,group= Species_ATPase, color= Species_ATPase)) + 
+  geom_point(aes(color=Species_ATPase), size = 0.5) + 
+  geom_smooth(method = drm, aes(color=Species_ATPase),linetype = "dashed", size = 0.5, method.args = list(fct = L.4()), se = F) +
+  scale_color_manual(values=c('red','black'))+
+  scale_x_log10() +
+  labs(title= "", x = "Dose (mM)",  y = "Na+/K+-ATPase activity \n (% of non-inhibited control)") + 
+  theme_classic()
+p2
+```
+
+Exercise. Karageorgi et al generated a series of Drosophila lines  with mutations in their ATPase. The data are stored in Figure3a.csv. Fit curves for the ATPase data of each of the Drosophila lines along with the ATPase of the monarch and the pig, and then estimate the EC50 for each dataset. Then,  plot the ATPase data with the plot() function in base R and with ggplot().
+
+Solution
+```{r}
+DoseResponse_Data_All <- read.csv("Figure3a.csv")
+
+head(DoseResponse_Data)
+
+DoseResponse_Data_All.model <- drm(Activity ~ Dose, Species_ATPase, 
+                                      data=DoseResponse_Data,
+                                      fct = LL.4(fixed = c(NA, 0, 100, NA)))
+summary(DoseResponse_Data_All.model)
+
+ED(DoseResponse_Data_All.model, c(50))
+
+plot(DoseResponse_Data_All.model,
+     type = "all",
+     lwd = c(2,2),
+     lty=c(3,3,1,1,1,1,1,1),
+     col = c("black", "red","black","grey","blue", "yellow","orange","red"),
+     pch = c(1,0),
+     main="Pig, monarch & mutant Drosophila ATPases")
+
+p3 <- ggplot(data = DoseResponse_Data,
+       aes(x = Dose, y = Activity,group= Species_ATPase, color= Species_ATPase)) + 
+  geom_point(aes(color=Species_ATPase), size = 0.5) + 
+  geom_smooth(method = drm, aes(color=Species_ATPase),linetype = "solid", size = 0.5, method.args = list(fct = L.4()), se = F) +
+  scale_color_manual(values=c("blue", "yellow","black","grey","red", "orange","red","black"))+
+  scale_x_log10() +
+  labs(title= "", x = "Dose (mM)",  y = "Na+/K+-ATPase activity \n (% of non-inhibited control)") + 
+  theme_classic()
+p3
+
+```
+
+
+
