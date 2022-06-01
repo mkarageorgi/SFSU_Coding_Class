@@ -1,0 +1,44 @@
+---
+title: "Multiple Dose Response Curves"
+output: html_Multiple_Dose_Response_Curves
+---
+
+### In the third  tutorial, we will learn how to compare the dose response curves from the pig, the monarch and the mutant Drosophila lines (Figure 3a) ### 
+
+Step 1. Reading a data file into R. The library(drc) and the library(tidyverse) functions load and activate the packages drc and tidyverse in R
+```{r}
+library(tidyverse)
+library(drc)
+```
+
+
+Step 2. How can we compare the dose response curves for the pig and monarch butterfly ATPase data, and the Drosophila lines ATPase data? 
+The lower and upper limits in the two dose response curves are set to 0 and 100.
+We can use a global F test to assess if the parameters of the two model curves are identical. 
+```{r}
+DoseResponse_Data_All <- read.csv("Figure3a.csv")
+
+# Model 1. Here, we fit a model that does not distinguish among the curves. Notice that the argument Species_ATPase indicating multiple curves is missing in this model.
+DoseResponse_Data_All.model1 <- drm(Activity ~ Dose, 
+                                      data=DoseResponse_Data_All,
+                                      fct = LL.4(fixed = c(NA, 0, 100, NA)))
+summary(DoseResponse_Data_All.model1)
+plot(DoseResponse_Data_All.model1, type="all")
+
+# Model 2. Here, we fit a model where we distinguish the dose response curve for each of them. We use the argument pmodels to incorporate the  assumption that the lower and upper limits for the ATPases from all ATPases are identical
+DoseResponse_Data_All.model2 <- drm(Activity ~ Dose, Species_ATPase, 
+                                      data=DoseResponse_Data_All,
+                                      fct = LL.4(fixed= c(NA, 0, 100, NA)))
+
+summary(DoseResponse_Data_All.model2)
+plot(DoseResponse_Data_All.model2, type= "all")
+
+```
+
+Step 3. Based on these two models we can calculate an approximate F-test. 
+```{r}
+anova(DoseResponse_Data_All.model1, DoseResponse_Data_All.model2)
+```
+The p value is below 0.001. We can therefore reject the null hypothesis that the two slopes and ED50 parameters are the same for all the ATPases. In consequence, we can reject that the dose-response curves are identical.
+
+
